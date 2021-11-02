@@ -9,9 +9,10 @@ const io = require('socket.io')(http, {
     }
 });
 
-// const session = require('express-session')
+const session = require('express-session')
 // var MySQLStore = require('express-mysql-session')(session)
 // const mysql = require('mysql2/promise')
+const cookieParser = require('cookie-parser')
 const helpers = require('./config/helpers');
 const bodyParser = require('body-parser');
 const fs = require('fs');
@@ -45,6 +46,11 @@ app.use(compression());
 //Cross origin fix
 app.use(cors());
 //app.options('*', 'cors');
+
+//session
+const oneDay = 1000 * 60 * 60 * 24;
+app.use(cookieParser())
+app.use(session({secret: process.env.SECRET, resave: true, saveUninitialized: false, cookie: { maxAge: 600000 }}))
 
 // Logger
 // create a write stream (in append mode)
@@ -123,6 +129,7 @@ app.use((req, res, next) => {
 //include route module
 const publicRoute = require('./routes/public');
 const authRoute = require('./routes/auth');
+const { MemoryStore } = require('express-session');
 
 //App Routes
 app.use('/api/v1/', publicRoute);
@@ -136,38 +143,66 @@ let arr = []
 
 async function getResult() {
     
-    setInterval( async() => {
-        const number = Math.floor(Math.random() * 90)
-        const number1 = Math.floor(Math.random() * 90)
-        const number2 = Math.floor(Math.random() * 90)
-        const number3 = Math.floor(Math.random() * 90)
-        const number4 = Math.floor(Math.random() * 90)
+    setInterval(async () => {
+        const number = Math.floor(Math.random() * 90) + 1
+        const number1 = Math.floor(Math.random() * 90) + 1
+        const number2 = Math.floor(Math.random() * 90) + 1
+        const number3 = Math.floor(Math.random() * 90) + 1
+        const number4 = Math.floor(Math.random() * 90) + 1
         arr = [number, number1, number2, number3, number4]
         let numberSet = new Set(arr)
+
         let array = [...numberSet]
 
-        var d = new Date();
-        var minutes = d.getMinutes()
-        var seconds = d.getSeconds()
-        var hours1 = d.getHours()
-        var date = d.getDate();
-        var month = d.getMonth() + 1; 
-        var year = d.getFullYear();
+        if (array.length < 5) {
+            const num = Math.floor(Math.random() * 90) + 1
+            array.push(num)
 
-        var time1 = hours1 + ":" + minutes + ":" + seconds
+            let numSet = new Set(array)
+
+            let newArray = [...numSet]
+
+            var d = new Date();
+            var minutes = d.getMinutes()
+            var seconds = d.getSeconds()
+            var hours1 = d.getHours()
+            var date = d.getDate();
+            var month = d.getMonth() + 1;
+            var year = d.getFullYear();
+
+            var time1 = hours1 + ":" + minutes + ":" + seconds
  
-        var dates = `${year}-${month}-${date} ${time1}`
+            var dates = `${year}-${month}-${date} ${time1}`
 
-        await db.Gameresults.create({
-            name: 'Lotto Express',
-            odds: array.toString(),
-            dates: dates
-        });
-        console.log(dates)
+            await db.Gameresults.create({
+                name: 'Lotto Express',
+                odds: newArray.toString(),
+                dates: dates
+            })
+            console.log(`Lotto express Odds from extra added array if previous array is less than 5: ${newArray}`)
+        } else {
+            var d = new Date();
+            var minutes = d.getMinutes()
+            var seconds = d.getSeconds()
+            var hours1 = d.getHours()
+            var date = d.getDate();
+            var month = d.getMonth() + 1;
+            var year = d.getFullYear();
 
-    }, 1800000)
+            var time1 = hours1 + ":" + minutes + ":" + seconds
+ 
+            var dates = `${year}-${month}-${date} ${time1}`
 
+            await db.Gameresults.create({
+                name: 'Lotto Express',
+                odds: array.toString(),
+                dates: dates
+            })
+            console.log(`lotto express  odds: ${array}`)
+        }
+    }, 1810000)
 }
+
     
 getResult()
 
@@ -179,36 +214,62 @@ let setArr = []
 async function getSoftLottoOdds() {
 
     setInterval( async() => {
-        const number = Math.floor(Math.random() * 90)
-        const number1 = Math.floor(Math.random() * 90)
-        const number2 = Math.floor(Math.random() * 90)
-        const number3 = Math.floor(Math.random() * 90)
-        const number4 = Math.floor(Math.random() * 90)
-        setArr = [number, number1, number2, number3, number4]
+        const number = Math.floor(Math.random() * 90) + 1
+        const number1 = Math.floor(Math.random() * 90) + 1
+        const number2 = Math.floor(Math.random() * 90) + 1
+        setArr = [number, number1, number2]
         let numberSet = new Set(setArr)
         let array = [...numberSet]
 
-        var d = new Date();
-        var minutes = d.getMinutes()
-        var seconds = d.getSeconds()
-        var hours1 = d.getHours()
-        var date = d.getDate();
-        var month = d.getMonth() + 1;
-        var year = d.getFullYear();
+        if (array.length < 3) {
+            const num = Math.floor(Math.random() * 90) + 1
+            array.push(num)
 
-        var time1 = hours1 + ":" + minutes + ":" + seconds
+            let numSet = new Set(array)
+
+            let newArray = [...numSet]
+
+            var d = new Date();
+            var minutes = d.getMinutes()
+            var seconds = d.getSeconds()
+            var hours1 = d.getHours()
+            var date = d.getDate();
+            var month = d.getMonth() + 1;
+            var year = d.getFullYear();
+
+            var time1 = hours1 + ":" + minutes + ":" + seconds
  
-        var dates = `${year}-${month}-${date} ${time1}`
+            var dates = `${year}-${month}-${date} ${time1}`
 
-        console.log(dates)
+            await db.Gameresults.create({
+                name: 'Lotto Express',
+                odds: newArray.toString(),
+                dates: dates
+            })
+            console.log(`Soft Lotto Odds from extra added array if previous array is less than 5: ${newArray}`)
+        } else {
+            var d = new Date();
+            var minutes = d.getMinutes()
+            var seconds = d.getSeconds()
+            var hours1 = d.getHours()
+            var date = d.getDate();
+            var month = d.getMonth() + 1;
+            var year = d.getFullYear();
 
-        await db.Gameresults.create({
-            name: 'soft Lotto',
-            odds: array.toString(),
-            dates: dates
-        });
+            var time1 = hours1 + ":" + minutes + ":" + seconds
+ 
+            var dates = `${year}-${month}-${date} ${time1}`
 
-    }, 300000)
+            await db.Gameresults.create({
+                name: 'soft Lotto',
+                odds: array.toString(),
+                dates: dates
+            });
+
+            console.log(`soft lotto odds: ${array}`)
+        }
+
+    }, 600000)
 
 }
     
@@ -261,7 +322,6 @@ app.use((err, req, res, next) => {
 //Landing Page
 app.use('/', function(req, res, next){
     res.status(200).json({ suceess: true });
-    console.log(game.up.arguments)
 });
 
 const PORT = process.env.PORT || 3014;

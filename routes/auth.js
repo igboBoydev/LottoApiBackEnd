@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport')
+const Joi = require('joi');
+const multer = require('multer')
+const { storage } = require('../cloudinary');
+const db = require('../database/db');
+const helpers = require('../config/helpers');
+const uploads = multer({ storage });
 require('../config/passport')
 //const decodeJWT = require('../middleware/decodeJWT');
 const signatureSigner = require('../middleware/checkSignature');
@@ -31,7 +37,8 @@ router.get('/profile/user', [jwtMiddleWare, signatureSignerMiddleware], AccountC
 // Routes
 router.get('/profile', [jwtMiddleWare, signatureSignerMiddleware], AccountCtrl.getProfile);
 router.post('/profile', [jwtMiddleWare, signatureSignerMiddleware, dataParser], AccountCtrl.postProfile);
-router.post('/kyc-upgrade', [jwtMiddleWare, signatureSignerMiddleware], AccountCtrl.kycUpdate);
+router.post('/kyc-upgrade', [jwtMiddleWare, signatureSignerMiddleware], uploads.single('file'), AccountCtrl.kycUpdate);
+router.post('/kyc-upgrades', [jwtMiddleWare, signatureSignerMiddleware], uploads.single('file'), AccountCtrl.kycUpdates);
 
 
 router.post('/transferFund', [jwtMiddleWare, signatureSignerMiddleware, dataParser], AccountCtrl.transferFund)  // fund tranfer
@@ -41,7 +48,8 @@ router.post('/postResult', [jwtMiddleWare, signatureSignerMiddleware, dataParser
 router.post('/postLottoExpressOdds', [jwtMiddleWare, signatureSignerMiddleware, dataParser], AccountCtrl.LottoExpressOdds)
 router.post('/postSoftLottoOdds', [jwtMiddleWare, signatureSignerMiddleware, dataParser], AccountCtrl.SoftLottoOdds)
 router.get('/gameresults', [jwtMiddleWare, signatureSignerMiddleware, dataParser], AccountCtrl.getGameResult)
-
+router.post('/postMaxAmount', [jwtMiddleWare, signatureSignerMiddleware, dataParser], AccountCtrl.postMax)
+router.post('/postBetMax', [jwtMiddleWare, signatureSignerMiddleware, dataParser], AccountCtrl.postBetMax)
 // Transaction history get request route
 // router.get('/transactions', [jwtMiddleWare, signatureSignerMiddleware, dataParser], AccountCtrl.transactions)
 

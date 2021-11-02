@@ -19,7 +19,6 @@ var User = (sequelize, type) => {
     address: Sequelize.STRING,
     last_login: Sequelize.STRING,
     otp: Sequelize.STRING,
-    bvn: Sequelize.STRING,
     dob: Sequelize.STRING,
     wallet: Sequelize.DOUBLE,
     bonus: Sequelize.DOUBLE,

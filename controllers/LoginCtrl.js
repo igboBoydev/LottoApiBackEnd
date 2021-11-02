@@ -7,6 +7,7 @@ const Joi = require('joi');
 var uuid = require('node-uuid');
 const sendotp = require('../mailer/sendotp');
 const config = require('../config/conf');
+const { session } = require('passport');
 
 
  
@@ -163,16 +164,10 @@ module.exports = {
           //     token: rand
           //   });
           // }
-
-        
-
-        
-
           const token = signToken(user);
           return res.status(200).json({
             success: {
               token: token,
-              user
               //uuid: rand
             }
           });

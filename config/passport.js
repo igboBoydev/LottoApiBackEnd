@@ -1,11 +1,10 @@
-require('dotenv').config();
 var passport = require('passport');
 var passportJWT = require('passport-jwt');
 var JwtStrategy = passportJWT.Strategy;
 var ExtractJwt = passportJWT.ExtractJwt;
 var opts = {};
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
-opts.secretOrKey = process.env.SECRET
+opts.secretOrKey = process.env.SECRET;
 
 var LocalStrategy = require('passport-local').Strategy;
 const db  = require('../database/db');

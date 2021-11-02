@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 const hbs = require('nodemailer-express-handlebars');
 require('dotenv').config();
 
+
 var transporter = nodemailer.createTransport({
   host:  process.env.MAIL_HOST,
   port:  process.env.MAIL_PORT,
@@ -25,7 +26,7 @@ var options = {
 };
 
 const sendPasswordMail = async option => {
-   
+  try {
     await transporter.use('compile', hbs(options));
 
     const message = {
@@ -42,6 +43,9 @@ const sendPasswordMail = async option => {
     const info = await transporter.sendMail(message);
     //console.log(info.messageId);
     return info;
+  } catch (e) {
+    console.log(`this is the error ${e}`)
+  }
 }
 
 module.exports = {sendPasswordMail}

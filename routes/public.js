@@ -47,7 +47,8 @@ router.post('/resend-whatsapp', [signatureSignerMiddleware, dataParser], Registe
 //Reset Password
 router.post('/password-reset', [signatureSignerMiddleware, dataParser], PasswordResetCtrl.ResetPassword);
 router.post('/validate-token',  [signatureSignerMiddleware, dataParser], PasswordResetCtrl.validateToken);
-router.post('/update-password',  [signatureSignerMiddleware, dataParser], PasswordResetCtrl.updatePassword);
+router.post('/update-password', [signatureSignerMiddleware, dataParser], PasswordResetCtrl.updatePassword);
+
 
 //Digitain
 router.post('/encoder',  Encoder.encode);
@@ -58,6 +59,10 @@ router.get('/site-settings',  HomeCtrl.siteSettings);
 router.post('/placeStake', HomeCtrl.placeStake);
 router.post('/placeLottoExpressStake', HomeCtrl.placeLottoExpress)
 router.post('/placeSoftLotto', HomeCtrl.softLotto)
+
+//admin
+
+router.get('/gamemaxamount', [signatureSignerMiddleware, dataParser], HomeCtrl.getMax)
 
 router.get('/lotto', async (req, res, next) => {
     let lotto = await db.Lotto.findAll()

@@ -14,8 +14,6 @@ let Bets = (sequelize, type) => {
         type: Sequelize.STRING,
         kind: Sequelize.STRING,
         odd: Sequelize.FLOAT,
-        min_possibleWinning: Sequelize.FLOAT,
-        max_possibleWinning: Sequelize.FLOAT,
         possibleWinning: Sequelize.FLOAT,
         staked: Sequelize.FLOAT,
         stakes: Sequelize.STRING,

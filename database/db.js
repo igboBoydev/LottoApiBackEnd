@@ -41,6 +41,8 @@ db.Bets = require('../models/Bets')(sequelize, Sequelize)
 db.Gameresults = require('../models/Gameresults')(sequelize, Sequelize)
 db.LottoExpressOdds = require('../models/LottoExpressOdds')(sequelize, Sequelize)
 db.SoftLottoOdds = require('../models/SoftLottoOdds')(sequelize, Sequelize)
+db.maxAmount = require('../models/maxAmount')(sequelize, Sequelize)
+db.betmax = require('../models/betmax')(sequelize, Sequelize)
 
 //User association
 db.User.hasOne(db.PasswordReset, {foreignKey: 'user_id', as: "passwordreset"})
