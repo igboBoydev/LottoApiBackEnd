@@ -2,9 +2,12 @@ const db = require('../database/db');
 const helpers = require('../config/helpers');
 const bcrypt =  require('bcryptjs');
 const Joi = require('joi');
+const multer = require('multer')
+const uploads = multer({dest: 'uploads/'})
 var uuid = require('node-uuid');
 var paystack = require('paystack')(process.env.PAYSTACK_SK);
 const axios = require('axios');
+const {Op} = require('sequelize')
 require('dotenv').config();
 
 const updatePasswordSchema = Joi.object().keys({
@@ -39,7 +42,7 @@ getProfile: async(req, res, next) => {
     'balance': parseFloat(req.user.wallet) + parseFloat(req.user.withdrawable),
     'bank_status': parseInt(req.user.bank_status),
     'profile_status': parseInt(req.user.profile_status),
-    'kyc_status': parseInt(req.user.profile_status),
+    'kyc_status': parseInt(req.user.kyc_status),
     'bank': myBank
   }
 
@@ -174,8 +177,6 @@ transferFund: async (req, res, next) => {
 
       return res.status(200).json(helpers.sendSuccess(`You have successfully sent the sum of ${amount} NGN to ${customer_id}`))
     }
-
-
   },
 
   LottoExpressOdds: async (req, res, next) => {
@@ -213,6 +214,35 @@ transferFund: async (req, res, next) => {
 
   },
 
+  postBetMax: async (req, res, next) => {
+    const maxSchema = Joi.object().keys({
+      betarr: Joi.string().required()
+    });
+
+    const validate = Joi.validate(req.body, maxSchema)
+    
+    if (validate.error != null) {
+      const errorMessage = validate.error.details.map(i => i.message).join('.');
+           return res.status(400).json(
+             helpers.sendError(errorMessage)
+           );
+    };
+
+    let user = await db.User.findOne({ where: { customer_id: req.user.customer_id } })
+
+    const betMax = await db.betmax.findOne({ where: { customer_id: req.user.customer_id } });
+    
+  const createUserBetMax = await db.betmax.create({
+    betarr: req.body.betarr,
+    email: req.body.email.toLowerCase(),
+    password: bcrypt.hashSync(req.body.password),
+    uuid: uuid(),
+    otp: code,
+    customer_id: customer_id
+  });
+
+  },
+
   SoftLottoOdds: async (req, res, next) => {
     const softSchema = Joi.object().keys({
       type: Joi.string().required(),
@@ -247,6 +277,30 @@ transferFund: async (req, res, next) => {
         helpers.sendError("Error ocurred! please refresh and try again")
       )
     }
+
+  },
+
+  postMax: async (req, res, next) => {
+    const maxSchema = Joi.object().keys({
+      type: Joi.string().required(),
+      value: Joi.string().required()
+    }).unknown();
+
+    const validate = Joi.validate(req.body, maxSchema)
+
+    if (validate.error != null) {
+      const errorMessage = validate.error.details.map(i => i.message).join('.');
+      return res.status(400).json(
+        helpers.sendError(errorMessage)
+      );
+    }
+        
+    const postMax = await db.maxAmount.findOne({ where: { type: req.body.type } });
+
+    postMax.value = req.body.value;
+    await postMax.save();
+
+    return res.status(200).json(helpers.sendSuccess(`${req.body.type}'s max amount updated successfully`));
 
   },
 
@@ -327,9 +381,7 @@ transferFund: async (req, res, next) => {
     let user = req.user
 
 
-    const func = (date, time) => {
-       return  (date - time)
-    }
+    
 
     // if (values) {
       
@@ -340,7 +392,11 @@ transferFund: async (req, res, next) => {
     // var userz = await db.sequelize.query('SELECT "*" FROM Bets "WHERE" "date" BETWEEN data AND "data "-"86400000"')
     // console.log(userz)
 
-    var userBet = await db.Bets.findAll({ where: [{ user_id: user.customer_id }, { type: name }], limit: 10, order: [['updatedAt', 'DESC']] })
+    const todayStart = new Date().setHours(0, 0, 0, 0)
+    const now = new Date()
+
+    var userBet = await db.Bets.findAll({ where: [{ user_id: user.customer_id }, { type: name },], limit: 10, order: [['updatedAt', 'DESC']] })
+    
     // let users = await db.Bets.findAll({ where: [{ user_id: user.customer_id } && { type: name } ], limit: 10, order: [ ['updatedAt',  'DESC'] ] })
 
 
@@ -360,59 +416,68 @@ transferFund: async (req, res, next) => {
 
     for (element of userBet) {
 
-      let elementArr = (element.stakes.split(','))
-      // console.log(elementArr)
-      // console.log(elementArr.length)
+    //   let elementArr = (element.stakes.split(','))
+    //   // console.log(elementArr)
+    //   // console.log(elementArr.length)
+    //   console.log('element array')
+    //   console.log(elementArr)
+    //   console.log('post array from game posted')
+    //   console.log(postGameArr)
 
-      const intersection = elementArr.filter(element => postGameArr.includes(element));
-      console.log(intersection)
+    //   const intersection = elementArr.filter(element => postGameArr.includes(element));
+    //   console.log(intersection)
 
-      var users = await db.User.findOne({ where: { customer_id: element.user_id } });
-      var bet = await db.Bets.findOne({ where: { user_id: element.user_id } });
+    //   var users = await db.User.findOne({ where: { customer_id: element.user_id } });
+    //   var bet = await db.Bets.findAll({ where: { id: element.id } });
+
+
      
-      let arr = gameWon[0].odds
-      if (element.type !== 'AGAINST') {
-        if (intersection) {
-          if (intersection.length === 5) {
-            amount = parseFlaot(element.max_possibleWinng)
-            users.wallet = users.wallet + parseFlaot(element.possibleWinng);
-            await users.save();
+    //   let arr = gameWon[0].odds
+    //   if (element.type !== 'AGAINST') {
+    //     if (intersection.length > 0) {
+    //       if (intersection.length === 5) {
+    //         amount = parseFloat(element.max_possibleWinng)
+    //         users.wallet = users.wallet + parseFlaot(element.possibleWinng);
+    //         await users.save();
 
-            bet.status = 'WIN';
-            await bet.save();
+    //         bet.status = 'WIN';
+    //         // await bet.save();
 
-            ///log transaction
-            db.Transaction.create({
-              user_id: user.id,
-              amount: amount,
-              type: 'credit',
-              status: 'success'
-            })
-          } else {
-            amount = parseFloat(element.min_possibleWinng) * intersection.length
-            users.wallet = users.wallet + amount;
-            await users.save();
+    //         ///log transaction
+    //         db.Transaction.create({
+    //           user_id: user.id,
+    //           amount: amount,
+    //           type: 'credit',
+    //           status: 'success'
+    //         })
+    //         return res.status(200).json({userBet})
+    //       } else if(intersection.length < 5 && intersection.length > 0)  {
+    //         amount = parseFloat(element.min_possibleWinng) * intersection.length
+    //         users.wallet = users.wallet + amount;
+    //         await users.save();
 
-            bet.status = 'WIN';
-            await bet.save();
+    //         bet.status = 'WIN';
+    //         // await bet.save();
 
-            ///log transaction
-            db.Transaction.create({
-              user_id: user.id,
-              amount: amount,
-              type: 'credit',
-              status: 'success'
-            })
-          };
-        } else {
-          bet.status = 'LOSS';
-          await bet.save();
-        };
-      };
+    //         ///log transaction
+    //         db.Transaction.create({
+    //           user_id: user.id,
+    //           amount: amount,
+    //           type: 'credit',
+    //           status: 'success'
+    //         })
+    //         return res.status(200).json({userBet})
+    //       };
+    //     } else {
+    //       bet.status = 'LOST'
+    //       await bet.save
+    //     }
+    //   };
 
+      console.log(element)
       
-      // arr.push(element)
-      return res.status(200).json({gameWon, userBet, users})
+    //   // arr.push(element)
+      return res.status(200).json({gameWon, element})
     }
 
             
@@ -548,17 +613,11 @@ transferFund: async (req, res, next) => {
 
   BetList: async (req, res, next) => {
 
-    let customer_id = req.user.customer_id;
-    const user = await db.User.findOne({ where: { customer_id: customer_id } })
-    let user_id = user.dataValues.customer_id
-
     const schema = Joi.object().keys({
       amount: Joi.string().required(),
       type: Joi.string().required(),
       kind: Joi.string(),
       odd: Joi.string().required(),
-      min_possibleWinning: Joi.string(),
-      max_possibleWinning: Joi.string(),
       possibleWinning: Joi.string(),
       staked: Joi.string().required(),
       stakes: Joi.string(),
@@ -577,6 +636,10 @@ transferFund: async (req, res, next) => {
     }
 
     
+    let customer_id = req.user.customer_id;
+    const user = await db.User.findOne({ where: { customer_id: customer_id } })
+    let user_id = user.dataValues.customer_id
+
     let amount = req.body.amount
     
     if (parseInt(user.wallet) > parseInt(amount)) {
@@ -594,8 +657,6 @@ transferFund: async (req, res, next) => {
         type: req.body.type,
         kind: req.body.kind,
         odd: req.body.odd,
-        min_possibleWinning: req.body.min_possibleWinning,
-        max_possibleWinning: req.body.max_possibleWinning,
         possibleWinning: req.body.possibleWinning,
         staked: req.body.staked,
         stakes: req.body.stakes,
@@ -622,9 +683,6 @@ transferFund: async (req, res, next) => {
 
       let betId = new Date().getTime().toString();
 
-      console.log('bet Time')
-      console.log(req.body.date)
-
       var createBet = await db.Bets.create({
         user_id: user_id,
         bet_id: betId,
@@ -632,8 +690,6 @@ transferFund: async (req, res, next) => {
         type: req.body.type,
         kind: req.body.kind,
         odd: req.body.odd,
-        min_possibleWinning: req.body.min_possibleWinning,
-        max_possibleWinning: req.body.max_possibleWinning,
         possibleWinning: req.body.possibleWinning,
         staked: req.body.staked,
         stakes: req.body.stakes,
@@ -761,9 +817,9 @@ fundWallet: async (req, res, next) => {
   if(validate.error != null)
   {
       const errorMessage = validate.error.details.map(i => i.message).join('.');
-      return res.status(400).json(
-          helpers.sendError(errorMessage)
-      );
+    return res.status(400).json(
+      helpers.sendError(errorMessage)
+    );
   }
 
   var reference = req.body.reference;
@@ -798,7 +854,6 @@ fundWallet: async (req, res, next) => {
 
         var user = await db.User.findOne({ where: { id: req.user.id }});
         var balance = parseFloat(user.wallet) + parseFloat(amount);
-        console.log(user)
         user.wallet = balance;
         await user.save();
 
@@ -829,24 +884,39 @@ fundWallet: async (req, res, next) => {
 },
 
 
-kycUpdate: async (req, res, next) => {
+  kycUpdate: async (req, res, next) => {
+    var user = await db.User.findOne({ where: { id: req.user.id } });
 
-  const kycSchema = Joi.object().keys({
-    bvn: Joi.string().min(3).required(),
-    id_type: Joi.string().min(3).required(),
-    id_number: Joi.string().min(3).required(),
-    id_url: Joi.string().min(4).required(),
-  }).unknown();
-
-  const validate = Joi.validate(req.body, kycSchema);
-
-  if(validate.error != null)
+      if(parseInt(user.kyc_status) == 1)
   {
+    return res.status(400).json(
+      helpers.sendError("KYC already submitted!")
+    );
+    }
+    
+    if (user.id_url !== null) {
+        return res.status(200).json(helpers.sendSuccess(""));
+    }
+    user.id_url = req.file.path
+    await user.save();
+    return res.status(200).json(helpers.sendSuccess(""));
+
+  },
+
+  kycUpdates: async (req, res, next) => {
+    const kycSchema = Joi.object().keys({
+      id_type: Joi.string().min(3).required(),
+      id_number: Joi.string().min(3).required(),
+    }).unknown();
+
+    const validate = Joi.validate(req.body, kycSchema);
+
+    if (validate.error != null) {
       const errorMessage = validate.error.details.map(i => i.message).join('.');
-      return res.status(400).json(
-          helpers.sendError(errorMessage)
+      return res.status(200).json(
+        helpers.sendSuccess(errorMessage)
       );
-  }
+    }
 
   var user = await db.User.findOne({ where: { id: req.user.id }});
 
@@ -857,23 +927,16 @@ kycUpdate: async (req, res, next) => {
     );
   }
 
-  user.bvn = req.body.bvn.trim();
-  user.id_type = req.body.id_type.trim();
-  user.id_number = req.body.id_number.trim();
-  user.id_url = req.body.id_url.trim();
+
+  user.id_type = req.body.id_type;
+  user.id_number = req.body.id_number;
   user.kyc_status = 1;
   await user.save();
 
   return res.status(200).json(helpers.sendSuccess("KYC details updated successfully"));
 
-},
-
+  }
 }
-
-
-
-
-
 
 
 
